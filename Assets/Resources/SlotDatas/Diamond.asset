@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5db90658544956b4f89ee64e6624c981, type: 3}
+  m_Name: Diamond
+  m_EditorClassIdentifier: 
+  <SlotType>k__BackingField: 5
+  <IconSprite>k__BackingField: {fileID: 21300000, guid: 8516fea0d0c33034d8a40430034218b4, type: 3}
+  <RareAmount>k__BackingField: 10
+  payout3: 15
+  payout4: 50
+  payout5: 150
+  <IsWild>k__BackingField: 0
+  <IsMultiplier>k__BackingField: 0
+  <MultiplierMin>k__BackingField: 0
+  <MultiplierMax>k__BackingField: 0

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5db90658544956b4f89ee64e6624c981, type: 3}
+  m_Name: Lemon
+  m_EditorClassIdentifier: 
+  <SlotType>k__BackingField: 1
+  <IconSprite>k__BackingField: {fileID: 21300000, guid: 329d5e257ae9b144fbab3247b93b8d49, type: 3}
+  <RareAmount>k__BackingField: 25
+  payout3: 3
+  payout4: 6
+  payout5: 12
+  <IsWild>k__BackingField: 0
+  <IsMultiplier>k__BackingField: 0
+  <MultiplierMin>k__BackingField: 0
+  <MultiplierMax>k__BackingField: 0
