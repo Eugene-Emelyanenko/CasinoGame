@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5db90658544956b4f89ee64e6624c981, type: 3}
   m_Name: Wild
   m_EditorClassIdentifier: 
-  <SlotType>k__BackingField: 8
+  <SlotType>k__BackingField: 7
   <IconSprite>k__BackingField: {fileID: 21300000, guid: f7ad290ddde43f9409567b5d60b86596, type: 3}
   <RareAmount>k__BackingField: 10
   payout3: 0

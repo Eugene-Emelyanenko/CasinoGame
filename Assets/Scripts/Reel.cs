@@ -6,14 +6,13 @@ using UnityEngine;
 public class Reel : MonoBehaviour
 {
     [SerializeField] private RectTransform rectTransform;
-    [SerializeField] private Slot[] slots;
-    public int SlotsCount => slots.Length;
+    [field: SerializeField] public Slot[] Slots { get; private set; }
 
     public void SetSlotsData(SlotData[] slotsData)
     {
-        for (int i = 0; i < SlotsCount; i++)
+        for (int i = 0; i < Slots.Length; i++)
         {
-            slots[i].SetData(slotsData[i]);
+            Slots[i].SetData(slotsData[i]);
         }
     }
 
