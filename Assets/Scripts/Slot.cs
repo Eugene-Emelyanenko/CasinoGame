@@ -21,7 +21,6 @@ public class Slot : MonoBehaviour
     
     public void PlayWinAnimation()
     {
-        // если уже проигрывается — сбрасываем
         if (winSequence != null && winSequence.IsActive())
         {
             winSequence.Kill();
@@ -29,25 +28,38 @@ public class Slot : MonoBehaviour
             image.color = Color.white;
         }
 
-        // создаём новую анимацию
         winSequence = DOTween.Sequence();
 
-        // 1️⃣ — пульсация (scale up / down)
         winSequence.Append(transform.DOScale(1.3f, 0.25f).SetEase(Ease.OutBack));
         winSequence.Append(transform.DOScale(1f, 0.25f).SetEase(Ease.InBack));
 
-        // 2️⃣ — мигание цвета
         winSequence.Join(image.DOColor(Color.yellow, 0.2f).SetLoops(6, LoopType.Yoyo));
-
-        // 3️⃣ — лёгкая вибрация (прыжок)
         winSequence.Join(transform.DOPunchPosition(Vector3.up * 10f, 0.6f, 8, 1f));
 
-        // 4️⃣ — возврат к исходному состоянию
         winSequence.OnComplete(() =>
         {
             image.color = Color.white;
             transform.localScale = Vector3.one;
         });
+    }
+    
+    public void TransformToSymbol(Sprite targetSprite)
+    {
+        Sequence seq = DOTween.Sequence();
+
+        // Немного "взрываем" Wild перед сменой
+        seq.Append(transform.DOScale(1.4f, 0.2f).SetEase(Ease.OutBack));
+        seq.Append(image.DOFade(0f, 0.15f));
+
+        // Меняем спрайт, когда Wild "исчез"
+        seq.AppendCallback(() =>
+        {
+            image.sprite = targetSprite;
+        });
+
+        // Возвращаем его обратно с новой иконкой
+        seq.Append(image.DOFade(1f, 0.15f));
+        seq.Append(transform.DOScale(1f, 0.25f).SetEase(Ease.InOutBack));
     }
 
     private void OnValidate()

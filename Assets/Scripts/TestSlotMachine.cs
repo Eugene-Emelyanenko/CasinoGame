@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -8,201 +10,155 @@ using Random = UnityEngine.Random;
 public class TestSlotMachine : MonoBehaviour
 {
     [SerializeField] private GameObject reelPrefab;
-    
     [SerializeField] private Transform reelsContainer;
 
-    [SerializeField] private HorizontalLayoutGroup reelsGroup;
+    [SerializeField] private HorizontalLayoutGroup reelsLayoutGroup;
     [SerializeField] private ReelGroupData[] reelGroupsData;
     private int currentReelGroupDataIndex = 0;
-    
+
+    private Slot[,] slots;
+
     private List<Reel> reels = new List<Reel>();
-    
+
     private SlotData[] slotsData;
-    
     private const string SLOTS_DATA_PATH = "SlotsData";
+
+    private Coroutine spinCoroutine;
 
     private void Start()
     {
         slotsData = Resources.LoadAll<SlotData>(SLOTS_DATA_PATH);
-        ChangeReelsGroupSpacing();
-        DisplayReels();
+        UpdateReels();
+        SetRandomSlotsData();
     }
 
-    private void DisplayReels()
+    private void UpdateReels()
     {
         reels.Clear();
 
-        foreach (Transform t in reelsContainer)
+        if (reelsContainer.childCount > 0)
         {
-            Destroy(t.gameObject);
+            foreach (Transform child in reelsContainer)
+            {
+                Destroy(child.gameObject);
+            }
         }
 
-        for (int i = 0; i < reelGroupsData[currentReelGroupDataIndex].Count; i++)
+        int reelCount = reelGroupsData[currentReelGroupDataIndex].Count;
+        for (int i = 0; i < reelCount; i++)
         {
             GameObject reelObject = Instantiate(reelPrefab, reelsContainer);
+
             if (reelObject.TryGetComponent(out Reel reel))
             {
-                reel.SetSlotsData(GetRandomSlotsData(reel.Slots.Length));
-                
                 reels.Add(reel);
             }
         }
+
+        UpdateSlots();
+    }
+
+    private void UpdateSlots()
+    {
+        int columns = reels.Count;
+        int rows = reels[0].Slots.Length;
+
+        slots = new Slot[columns, rows];
+
+        for (int x = 0; x < columns; x++)
+        {
+            Slot[] reelSlots = reels[x].Slots;
+
+            for (int y = 0; y < rows; y++)
+            {
+                slots[x, y] = reelSlots[y];
+            }
+        }
+
+        Debug.Log($"Created {columns} reels × {rows} slots grid successfully!");
+    }
+
+    private void SetRandomSlotsData()
+    {
+        int columns = slots.GetLength(0);
+        int rows = slots.GetLength(1);
+
+        for (int i = 0; i < columns; i++)
+        {
+            for (int j = 0; j < rows; j++)
+            {
+                slots[i, j].SetData(GetRandomSlotData());
+            }
+        }
+
+        PrintGrid(slots);
     }
 
     public void Spin()
     {
-        StartCoroutine(SpinCoroutine());
+        if (spinCoroutine == null)
+        {
+            spinCoroutine = StartCoroutine(SpinCoroutine());
+        }
     }
 
     private IEnumerator SpinCoroutine()
     {
-        DisplayReels();
+        SetRandomSlotsData();
 
         yield return new WaitForSeconds(1f);
-        
+
         CheckMatches();
+
+        spinCoroutine = null;
     }
 
-    public void AddReel()
+    private SlotData GetRandomSlotData()
     {
-        ChangeReelsCount(true);
-        ChangeReelsGroupSpacing();
-        DisplayReels();
-    }
-
-    public void RemoveReel()
-    {
-        ChangeReelsCount(false);
-        ChangeReelsGroupSpacing();
-        DisplayReels();
-    }
-
-    private void ChangeReelsCount(bool isIncrease)
-    {
-        currentReelGroupDataIndex = (currentReelGroupDataIndex + (isIncrease ? 1 : -1) + reelGroupsData.Length) % reelGroupsData.Length;
-    }
-
-    private void ChangeReelsGroupSpacing()
-    {
-        reelsGroup.spacing = reelGroupsData[currentReelGroupDataIndex].Spacing;
-    }
-    
-    private SlotData[] GetRandomSlotsData(int count)
-    {
-        SlotData[] result = new SlotData[count];
-
-        for (int i = 0; i < count; i++)
-        {
-            result[i] = GetWeightedRandomSlot();
-        }
-
-        return result;
-    }
-
-    private SlotData GetWeightedRandomSlot()
-    {
-        if (slotsData == null || slotsData.Length == 0)
-        {
-            Debug.LogError("No SlotData assets found in Resources/SlotsData.");
-            return null;
-        }
-
         int totalWeight = 0;
-        foreach (var slot in slotsData)
-            totalWeight += Mathf.Max(1, slot.RareAmount);
+        foreach (var s in slotsData)
+            totalWeight += Mathf.Max(1, s.RareAmount);
 
         int roll = Random.Range(0, totalWeight);
         int cumulative = 0;
 
-        foreach (var slot in slotsData)
+        foreach (var s in slotsData)
         {
-            cumulative += slot.RareAmount;
+            cumulative += Mathf.Max(1, s.RareAmount);
             if (roll < cumulative)
-                return slot;
+                return s;
         }
-        
-        return slotsData[Random.Range(0, slotsData.Length)];
+
+        return slotsData[slotsData.Length - 1];
     }
 
-    public void CheckMatches()
+
+    private void CheckMatches()
     {
-        if (reels.Count == 0)
-        {
-            Debug.LogWarning("No reels to check!");
-            return;
-        }
+        int columns = slots.GetLength(0);
+        int rows = slots.GetLength(1);
 
-        int reelsCount = reels.Count;
-        int rows = reels[0].Slots.Length;
-
-        // создаём двумерный массив для быстрого доступа
-        Slot[,] grid = new Slot[reelsCount, rows];
-
-        for (int x = 0; x < reelsCount; x++)
-        {
-            Slot[] reelSlots = reels[x].Slots;
-            for (int y = 0; y < rows; y++)
-            {
-                grid[x, y] = reelSlots[y];
-            }
-        }
-        
-        PrintGrid(grid);
-
-        // хэшсет для хранения всех выигравших слотов
-        HashSet<Slot> winningSlots = new HashSet<Slot>();
         int totalWin = 0;
 
-        // проверяем совпадения в каждой строке
+        // Перебираем все строки
         for (int y = 0; y < rows; y++)
         {
-            SlotData currentSymbol = grid[0, y].Data;
-            int consecutive = 1;
+            List<Slot> currentLine = new List<Slot>();
 
-            for (int x = 1; x < reelsCount; x++)
+            // Берем строку целиком
+            for (int x = 0; x < columns; x++)
             {
-                if (grid[x, y].Data == currentSymbol)
-                {
-                    consecutive++;
-                }
-                else
-                {
-                    // проверяем серию до обрыва
-                    if (consecutive >= 3)
-                    {
-                        int payout = currentSymbol.GetPayout(consecutive);
-                        totalWin += payout;
-
-                        for (int back = x - consecutive; back < x; back++)
-                            winningSlots.Add(grid[back, y]);
-
-                        Debug.Log($"WIN: {currentSymbol.SlotType} x{consecutive} → +{payout}");
-                    }
-
-                    currentSymbol = grid[x, y].Data;
-                    consecutive = 1;
-                }
+                currentLine.Add(slots[x, y]);
             }
 
-            // последняя серия в строке
-            if (consecutive >= 3)
-            {
-                int payout = currentSymbol.GetPayout(consecutive);
-                totalWin += payout;
-
-                for (int back = reelsCount - consecutive; back < reelsCount; back++)
-                    winningSlots.Add(grid[back, y]);
-
-                Debug.Log($"WIN: {currentSymbol.SlotType} x{consecutive} → +{payout}");
-            }
+            // Проверяем совпадения в этой строке
+            int win = CheckLineMatches(currentLine);
+            totalWin += win;
         }
 
-        // проигрываем анимации выигравших слотов
         if (totalWin > 0)
         {
-            Debug.Log($"💰 Total Win: {totalWin}");
-            foreach (var slot in winningSlots)
-                slot.PlayWinAnimation();
+            Debug.Log($"💰 TOTAL WIN: {totalWin}");
         }
         else
         {
@@ -210,15 +166,119 @@ public class TestSlotMachine : MonoBehaviour
         }
     }
 
-    private void PrintGrid(Slot[,] grid)
+    private int CheckLineMatches(List<Slot> line)
     {
-        if (grid == null)
+        int totalWin = 0;
+        List<Slot> currentMatch = new List<Slot>();
+
+        SlotType? baseType = null;
+
+        for (int i = 0; i < line.Count; i++)
         {
-            Debug.LogError("Grid is null — nothing to print!");
-            return;
+            Slot slot = line[i];
+            SlotData data = slot.Data;
+
+            if (currentMatch.Count == 0)
+            {
+                currentMatch.Add(slot);
+                baseType = data.IsWild ? null : data.SlotType;
+            }
+            else
+            {
+                bool isMatch =
+                    data.IsWild ||
+                    baseType == null ||
+                    data.SlotType == baseType;
+
+                if (isMatch)
+                {
+                    currentMatch.Add(slot);
+                    if (baseType == null && !data.IsWild)
+                        baseType = data.SlotType;
+                }
+                else
+                {
+                    totalWin += ProcessMatch(currentMatch);
+                    currentMatch.Clear();
+                    currentMatch.Add(slot);
+                    baseType = data.IsWild ? null : data.SlotType;
+                }
+            }
         }
 
-        int reelsCount = grid.GetLength(0);
+        totalWin += ProcessMatch(currentMatch);
+
+        return totalWin;
+    }
+
+    private int ProcessMatch(List<Slot> match)
+    {
+        if (match.Count < 3)
+            return 0;
+
+        // Проверяем, все ли Wild
+        bool allWild = match.All(s => s.Data.IsWild);
+
+        SlotData baseData;
+
+        if (allWild)
+        {
+            // 🔹 Выбираем случайный не-Wild символ из всех доступных
+            var nonWildSymbols = slotsData.Where(s => !s.IsWild && !s.IsMultiplier).ToArray();
+            baseData = nonWildSymbols[Random.Range(0, nonWildSymbols.Length)];
+
+            Debug.Log($"✨ All Wilds turned into: {baseData.SlotType}");
+
+            // Анимация превращения всех Wild в выбранный символ
+            foreach (Slot slot in match)
+            {
+                slot.TransformToSymbol(baseData.IconSprite);
+                slot.SetData(baseData); // обновляем данные, чтобы считался как выбранный тип
+            }
+
+            // Можно добавить небольшую паузу перед анимацией выигрыша
+            DOVirtual.DelayedCall(0.6f, () =>
+            {
+                foreach (Slot slot in match)
+                    slot.PlayWinAnimation();
+            });
+
+            int payout = baseData.GetPayout(match.Count);
+            Debug.Log($"💎 All Wilds became {baseData.SlotType}! Win: {payout}");
+            return payout;
+        }
+
+        // 🔹 Обычная логика, если не все Wild
+        baseData = match.FirstOrDefault(s => !s.Data.IsWild)?.Data ?? match[0].Data;
+        int matchCount = match.Count;
+        int payoutNormal = baseData.GetPayout(matchCount);
+
+        bool hasWilds = false;
+        foreach (Slot slot in match)
+        {
+            if (slot.Data.IsWild)
+            {
+                hasWilds = true;
+                slot.TransformToSymbol(baseData.IconSprite);
+            }
+        }
+
+        float delayBeforeWinAnim = hasWilds ? 0.6f : 0f;
+
+        DOVirtual.DelayedCall(delayBeforeWinAnim, () =>
+        {
+            foreach (Slot slot in match)
+                slot.PlayWinAnimation();
+        });
+
+        Debug.Log($"🔥 Match x{matchCount} of {baseData.SlotType}: +{payoutNormal}");
+        return payoutNormal;
+    }
+
+
+    private void PrintGrid(Slot[,] grid)
+    {
+        int columns = grid.GetLength(0);
         int rows = grid.GetLength(1);
 
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -228,13 +288,10 @@ public class TestSlotMachine : MonoBehaviour
         {
             sb.Append($"Row {y}: ");
 
-            for (int x = 0; x < reelsCount; x++)
+            for (int x = 0; x < columns; x++)
             {
-                var slot = grid[x, y];
-                if (slot != null && slot.Data != null)
-                    sb.Append($"{slot.Data.SlotType.ToString().PadRight(50)} ");
-                else
-                    sb.Append("[NULL] ".PadRight(10));
+                Slot slot = grid[x, y];
+                sb.Append($"{slot.Data.SlotType.ToString().PadRight(50)} ");
             }
 
             sb.AppendLine();

@@ -2397,7 +2397,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   reelPrefab: {fileID: 571108897804230425, guid: 51f9ce328f1350342bafb14a90035182, type: 3}
   reelsContainer: {fileID: 414252149}
-  reelsGroup: {fileID: 414252153}
+  reelsLayoutGroup: {fileID: 414252153}
   reelGroupsData:
   - <Count>k__BackingField: 3
     <Spacing>k__BackingField: -600
